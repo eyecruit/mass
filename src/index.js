@@ -1,26 +1,27 @@
-import open, { apps } from 'open';
-import Visitor from './Visitor.js';
+import HeadlessVisitor from './HeadlessVisitor.js';
 
-// list of url to open
+// List of URLs to visit
 const urls = [
-  'http://localhost:5000',
-  'https://google.com',
-  'https://x.com',
+  'https://thelogicore.com',
+  'https://thelogicore.com/contact',
+  'https://thelogicore.com/about',
+  'https://thelogicore.com/case-studies',
+  'https://thelogicore.com/projects',
+  'https://thelogicore.com/contact',
+  'https://thelogicore.com/about',
+  'https://thelogicore.com/case-studies',
 ];
 
-const app = {
-  // name: apps.browser,
-  name: apps.browserPrivate,
-  // name: 'chrome',
-  // name: 'firefox',
-  // name: 'chromium',
-  arguments: [
-    // '--new-window', // enable this if you want a new window pop up of each iteration
-    // '--disable-extensions',
-    // '--v=1'
-  ]
+// Configuration options
+const options = {
+  incognito: true,           // Use incognito mode
+  delay: 3000,               // 3 seconds delay between requests
+  headless: true,            // Run in headless mode (perfect for VPS)
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 };
 
-const visitor = new Visitor(open, urls, app);
+// Create visitor instance
+const visitor = new HeadlessVisitor(urls, options);
 
-visitor.execute(1);
+// Execute with 5 iterations (adjust as needed)
+visitor.execute(5);
