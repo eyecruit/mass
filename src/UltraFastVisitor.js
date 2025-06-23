@@ -69,6 +69,8 @@ class UltraFastVisitor {
           console.log(`👷 Worker ${workerId}: ${message.url} (Iteration ${message.iteration})`);
         } else if (message.type === 'complete') {
           console.log(`✅ Worker ${workerId} completed`);
+        } else if (message.type === 'window') {
+          console.log(`🪟 Worker ${workerId}: ${message.action} incognito window (Iteration ${message.iteration})`);
         }
       });
 
@@ -92,6 +94,7 @@ class UltraFastVisitor {
     console.log(`🎯 ${count} iterations for ${this._urls.length} URLs`);
     console.log(`⚡ ${this._options.workers} workers, ${this._options.concurrentPages} pages per worker`);
     console.log(`🕵️  Incognito mode: ${this._options.incognito ? 'Enabled' : 'Disabled'}`);
+    console.log('🪟 NEW WINDOW PER ITERATION - MULTIPLE TABS - AUTO CLOSE');
     console.log('🚀 MAXIMUM SPEED - NO DELAYS - MULTITHREADED');
     console.log('---');
 

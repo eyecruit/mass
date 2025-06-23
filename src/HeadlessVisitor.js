@@ -23,7 +23,6 @@ class HeadlessVisitor {
     };
     
     this._browser = null;
-    this._context = null;
   }
 
   /**
@@ -52,65 +51,69 @@ class HeadlessVisitor {
       ]
     });
 
-    if (this._options.incognito) {
-      this._context = await this._browser.createIncognitoBrowserContext();
-    } else {
-      this._context = this._browser.defaultBrowserContext();
-    }
-
     console.log('✅ Browser initialized successfully');
   }
 
   /**
-   * Visit a single URL
-   * @param {string} url - URL to visit
-   * @param {number} index - Current iteration index
-   */
-  async _visitUrl(url, index) {
-    try {
-      const page = await this._context.newPage();
-      
-      // Set user agent
-      await page.setUserAgent(this._options.userAgent);
-      
-      // Set viewport
-      await page.setViewport({ width: 1920, height: 1080 });
-      
-      // Enable JavaScript
-      await page.setJavaScriptEnabled(true);
-      
-      console.log(`📱 Visiting: ${url} (Iteration ${index + 1})`);
-      
-      // Navigate to the URL with minimal wait
-      await page.goto(url, { 
-        waitUntil: 'domcontentloaded', // Faster than networkidle2
-        timeout: 15000 
-      });
-      
-      // Minimal wait for page load
-      await page.waitForTimeout(500);
-      
-      console.log(`✅ Successfully visited: ${url}`);
-      
-      // Close the page immediately
-      await page.close();
-      
-    } catch (error) {
-      console.error(`❌ Error visiting ${url}:`, error.message);
-    }
-  }
-
-  /**
-   * Process URLs in batches with concurrency
-   * @param {string[]} urls - URLs to process
+   * Visit URLs in a new incognito window
+   * @param {string[]} urls - URLs to visit
    * @param {number} iteration - Current iteration number
    */
-  async _processUrlBatch(urls, iteration) {
-    const promises = urls.map((url, index) => 
-      this._visitUrl(url, iteration)
-    );
+  async _visitUrlsInNewWindow(urls, iteration) {
+    let context = null;
     
-    await Promise.all(promises);
+    try {
+      // Create new incognito context for this iteration
+      context = await this._browser.createIncognitoBrowserContext();
+      
+      console.log(`🪟 Created new incognito window (Iteration ${iteration + 1})`);
+
+      // Create multiple tabs for all URLs
+      const pagePromises = urls.map(async (url, urlIndex) => {
+        try {
+          const page = await context.newPage();
+          
+          // Set user agent
+          await page.setUserAgent(this._options.userAgent);
+          
+          // Set viewport
+          await page.setViewport({ width: 1920, height: 1080 });
+          
+          // Enable JavaScript
+          await page.setJavaScriptEnabled(true);
+          
+          console.log(`📱 Visiting: ${url} (Iteration ${iteration + 1}, Tab ${urlIndex + 1})`);
+          
+          // Navigate to the URL with minimal wait
+          await page.goto(url, { 
+            waitUntil: 'domcontentloaded', // Faster than networkidle2
+            timeout: 15000 
+          });
+          
+          // Minimal wait for page load
+          await page.waitForTimeout(500);
+          
+          console.log(`✅ Successfully visited: ${url}`);
+          
+          // Don't close individual pages - let the context handle it
+          
+        } catch (error) {
+          console.error(`❌ Error visiting ${url}:`, error.message);
+        }
+      });
+
+      // Wait for all tabs to complete
+      await Promise.all(pagePromises);
+      
+      console.log(`✅ Completed all tabs in incognito window (Iteration ${iteration + 1})`);
+
+    } finally {
+      // Close the entire incognito context (all tabs) for this iteration
+      if (context) {
+        await context.close();
+        console.log(`🪟 Closed incognito window (Iteration ${iteration + 1})`);
+      }
+    }
   }
 
   /**
@@ -124,14 +127,15 @@ class HeadlessVisitor {
       console.log(`🎯 Starting ${count} iterations for ${this._urls.length} URLs`);
       console.log(`⚡ Concurrent pages: ${this._options.concurrentPages}`);
       console.log(`🕵️  Incognito mode: ${this._options.incognito ? 'Enabled' : 'Disabled'}`);
+      console.log('🪟 NEW WINDOW PER ITERATION - MULTIPLE TABS - AUTO CLOSE');
       console.log('🚀 Running at maximum speed - NO DELAYS');
       console.log('---');
       
       for (let iteration = 0; iteration < count; iteration++) {
         console.log(`\n🔄 Iteration ${iteration + 1}/${count}`);
         
-        // Process all URLs concurrently
-        await this._processUrlBatch(this._urls, iteration);
+        // Process all URLs in a new incognito window
+        await this._visitUrlsInNewWindow(this._urls, iteration);
       }
       
       console.log('\n🎉 All iterations completed at maximum speed!');

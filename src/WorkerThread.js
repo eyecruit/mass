@@ -5,7 +5,6 @@ async function runWorker() {
   const { urls, options, workerId, iterations } = workerData;
   
   let browser = null;
-  let context = null;
 
   try {
     // Initialize browser
@@ -29,47 +28,76 @@ async function runWorker() {
       ]
     });
 
-    if (options.incognito) {
-      context = await browser.createIncognitoBrowserContext();
-    } else {
-      context = browser.defaultBrowserContext();
-    }
-
-    // Process iterations
+    // Process iterations - each iteration gets a new incognito window
     for (let iteration = 0; iteration < iterations; iteration++) {
-      // Process all URLs concurrently
-      const promises = urls.map(async (url) => {
-        try {
-          const page = await context.newPage();
+      let context = null;
+      
+      try {
+        // Create new incognito context for each iteration
+        context = await browser.createIncognitoBrowserContext();
+        
+        // Send window creation message
+        parentPort.postMessage({
+          type: 'window',
+          action: 'Created new',
+          iteration: iteration + 1
+        });
+
+        // Create multiple tabs for all URLs in this iteration
+        const pagePromises = urls.map(async (url, urlIndex) => {
+          try {
+            const page = await context.newPage();
+            
+            await page.setUserAgent(options.userAgent);
+            await page.setViewport({ width: 1920, height: 1080 });
+            await page.setJavaScriptEnabled(true);
+            
+            // Send progress message
+            parentPort.postMessage({
+              type: 'progress',
+              url,
+              iteration: iteration + 1
+            });
+            
+            // Navigate with minimal wait
+            await page.goto(url, { 
+              waitUntil: 'domcontentloaded',
+              timeout: 10000 
+            });
+            
+            // Minimal wait
+            await page.waitForTimeout(200);
+            
+            // Don't close individual pages - let the context handle it
+            
+          } catch (error) {
+            // Continue with other URLs even if one fails
+          }
+        });
+
+        // Wait for all tabs to complete
+        await Promise.all(pagePromises);
+        
+        // Send window completion message
+        parentPort.postMessage({
+          type: 'window',
+          action: 'Completed',
+          iteration: iteration + 1
+        });
+
+      } finally {
+        // Close the entire incognito context (all tabs) for this iteration
+        if (context) {
+          await context.close();
           
-          await page.setUserAgent(options.userAgent);
-          await page.setViewport({ width: 1920, height: 1080 });
-          await page.setJavaScriptEnabled(true);
-          
-          // Send progress message
+          // Send window close message
           parentPort.postMessage({
-            type: 'progress',
-            url,
+            type: 'window',
+            action: 'Closed',
             iteration: iteration + 1
           });
-          
-          // Navigate with minimal wait
-          await page.goto(url, { 
-            waitUntil: 'domcontentloaded',
-            timeout: 10000 
-          });
-          
-          // Minimal wait
-          await page.waitForTimeout(200);
-          
-          await page.close();
-          
-        } catch (error) {
-          // Continue with other URLs even if one fails
         }
-      });
-
-      await Promise.all(promises);
+      }
     }
 
     // Send completion message

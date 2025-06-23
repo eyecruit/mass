@@ -16,7 +16,7 @@ const urls = [
 const options = {
   incognito: true,           // Use incognito mode
   headless: true,            // Run in headless mode (perfect for VPS)
-  workers: 6,                // Number of worker threads (increased for speed)
+  workers: 10,                // Number of worker threads (increased for speed)
   concurrentPages: 8,        // Pages per worker (increased for speed)
   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 };
