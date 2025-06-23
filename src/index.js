@@ -2,14 +2,12 @@ import UltraFastVisitor from './UltraFastVisitor.js';
 
 // List of URLs to visit
 const urls = [
-  'https://thelogicore.com',
-  'https://thelogicore.com/contact',
-  'https://thelogicore.com/about',
   'https://thelogicore.com/case-studies',
   'https://thelogicore.com/projects',
-  'https://thelogicore.com/contact',
   'https://thelogicore.com/about',
-  'https://thelogicore.com/case-studies',
+  'https://thelogicore.com',
+  'https://thelogicore.com/contact',
+  'https://www.thelogicore.com/services/web-development',
 ];
 
 // Configuration options for ULTRA MAXIMUM SPEED
